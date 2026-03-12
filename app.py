@@ -41,6 +41,7 @@ def get_duration(file_path):
     except Exception:
         return 0.0
 
+
 def run_ffmpeg_with_progress(cmd, expected_duration, progress_tracker):
     """Executes FFmpeg and updates the Gradio progress bar."""
     
@@ -109,6 +110,7 @@ def calculate_expected_duration(input_path, start, end):
         return end
     return total
 
+
 # =====================================================================
 # Gradio Endpoint Functions
 # =====================================================================
@@ -117,7 +119,7 @@ def convert_video(input_file, sub_file, out_ext, start, end, res_w, res_h, crop_
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
-    out_path = tempfile.mktemp(suffix=f".{out_ext}")
+    out_path = tempfile.mkstemp(suffix=f".{out_ext}")
     
     cmd, filters = build_base_cmd(input_file, start, end, crop_w, crop_h, crop_x, crop_y, res_w, res_h)
     
@@ -137,11 +139,12 @@ def convert_video(input_file, sub_file, out_ext, start, end, res_w, res_h, crop_
     run_ffmpeg_with_progress(cmd, expected_duration, progress)
     return out_path
 
+
 def convert_audio(input_file, out_ext, start, end, progress=gr.Progress()):
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
-    out_path = tempfile.mktemp(suffix=f".{out_ext}")
+    out_path = tempfile.mkstemp(suffix=f".{out_ext}")
     
     cmd, _ = build_base_cmd(input_file, start, end, None, None, None, None, None, None)
     cmd += ARGS_AUDIO_CONVERT
@@ -150,10 +153,11 @@ def convert_audio(input_file, out_ext, start, end, progress=gr.Progress()):
     run_ffmpeg_with_progress(cmd, expected_duration, progress)
     return out_path
 
+
 def convert_image(input_file, out_ext, res_w, res_h, crop_w, crop_h, crop_x, crop_y, progress=gr.Progress()):
     if not input_file: raise gr.Error("Please upload a file.")
     
-    out_path = tempfile.mktemp(suffix=f".{out_ext}")
+    out_path = tempfile.mkstemp(suffix=f".{out_ext}")
     cmd, filters = build_base_cmd(input_file, None, None, crop_w, crop_h, crop_x, crop_y, res_w, res_h)
     
     if filters:
@@ -165,11 +169,12 @@ def convert_image(input_file, out_ext, res_w, res_h, crop_w, crop_h, crop_x, cro
     run_ffmpeg_with_progress(cmd, 0, progress) # Images have 0 duration, bar will just show processing
     return out_path
 
+
 def convert_to_gif(input_file, start, end, res_w, res_h, crop_w, crop_h, crop_x, crop_y, progress=gr.Progress()):
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
-    out_path = tempfile.mktemp(suffix=".gif")
+    out_path = tempfile.mkstemp(suffix=".gif")
     
     cmd, filters = build_base_cmd(input_file, start, end, crop_w, crop_h, crop_x, crop_y, res_w, res_h)
     
@@ -184,11 +189,12 @@ def convert_to_gif(input_file, start, end, res_w, res_h, crop_w, crop_h, crop_x,
     run_ffmpeg_with_progress(cmd, expected_duration, progress)
     return out_path
 
+
 def extract_audio(input_file, out_ext, start, end, progress=gr.Progress()):
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
-    out_path = tempfile.mktemp(suffix=f".{out_ext}")
+    out_path = tempfile.mkstemp(suffix=f".{out_ext}")
     
     cmd, _ = build_base_cmd(input_file, start, end, None, None, None, None, None, None)
     cmd += ARGS_EXTRACT_AUDIO
@@ -208,6 +214,7 @@ def ui_trim():
         end = gr.Number(label="End Time (s)", precision=2)
     return start, end
 
+
 def ui_visuals():
     with gr.Accordion("Resize & Crop (Leave blank to keep original)", open=False):
         with gr.Row():
@@ -219,6 +226,7 @@ def ui_visuals():
             crop_x = gr.Number(label="Crop X Offset", precision=0)
             crop_y = gr.Number(label="Crop Y Offset", precision=0)
     return res_w, res_h, crop_w, crop_h, crop_x, crop_y
+
 
 with gr.Blocks(title="Web FormatFactory") as app:
     gr.Markdown("# Web FormatFactory (Powered by FFmpeg)")
@@ -299,5 +307,4 @@ with gr.Blocks(title="Web FormatFactory") as app:
                     
             e_btn.click(extract_audio, inputs=[e_in, e_ext, e_start, e_end], outputs=e_out)
 
-if __name__ == "__main__":
-    app.launch()
+app.launch(share=False, root_path=os.getenv('GRADIO_ROOT_PATH'))
