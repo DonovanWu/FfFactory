@@ -4,4 +4,4 @@ services:
     image: ff-factory
     restart: unless-stopped
     ports:
-      - 7863:7860
+      - 7860:7860

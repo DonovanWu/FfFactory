@@ -246,7 +246,7 @@ with gr.Blocks(title="Web FormatFactory") as app:
                     v_rw, v_rh, v_cw, v_ch, v_cx, v_cy = ui_visuals()
                     v_btn = gr.Button("Convert Video", variant="primary")
                 with gr.Column():
-                    v_out = gr.Video(label="Output Video")
+                    v_out = gr.File(label="Output Video")
             
             # NEW: Add v_sub to the inputs list right after v_in
             v_btn.click(
@@ -264,7 +264,7 @@ with gr.Blocks(title="Web FormatFactory") as app:
                     a_start, a_end = ui_trim()
                     a_btn = gr.Button("Convert Audio", variant="primary")
                 with gr.Column():
-                    a_out = gr.Audio(label="Output Audio")
+                    a_out = gr.File(label="Output Audio")
                     
             a_btn.click(convert_audio, inputs=[a_in, a_ext, a_start, a_end], outputs=a_out)
 
@@ -277,7 +277,7 @@ with gr.Blocks(title="Web FormatFactory") as app:
                     i_rw, i_rh, i_cw, i_ch, i_cx, i_cy = ui_visuals()
                     i_btn = gr.Button("Convert Image", variant="primary")
                 with gr.Column():
-                    i_out = gr.Image(label="Output Image")
+                    i_out = gr.File(label="Output Image")
                     
             i_btn.click(convert_image, inputs=[i_in, i_ext, i_rw, i_rh, i_cw, i_ch, i_cx, i_cy], outputs=i_out)
 
@@ -290,7 +290,7 @@ with gr.Blocks(title="Web FormatFactory") as app:
                     g_rw, g_rh, g_cw, g_ch, g_cx, g_cy = ui_visuals()
                     g_btn = gr.Button("Create GIF", variant="primary")
                 with gr.Column():
-                    g_out = gr.Image(label="Output GIF")
+                    g_out = gr.Image(label="Output GIF", format='gif')
                     
             g_btn.click(convert_to_gif, inputs=[g_in, g_start, g_end, g_rw, g_rh, g_cw, g_ch, g_cx, g_cy], outputs=g_out)
 
