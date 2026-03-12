@@ -1,0 +1,7 @@
+services:
+  gradio:
+    build: .
+    image: ff-factory
+    restart: unless-stopped
+    ports:
+      - 7863:7860
