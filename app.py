@@ -2,6 +2,8 @@ import gradio as gr
 import subprocess
 import tempfile
 import os
+import functools
+from collections import defaultdict
 
 # =====================================================================
 # FFmpeg Parameterization (Tweak these to optimize your conversions)
@@ -111,11 +113,47 @@ def calculate_expected_duration(input_path, start, end):
     return total
 
 
+file_tracker = defaultdict(dict)
+
+
+def cleanup_last_file(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        req = kwargs.get('request', args[-1])
+        if not isinstance(req, gr.Request):
+            raise RuntimeError('Failed to get gradio request!')
+        cleanup_file(req, func.__name__)
+        out_path = func(*args, **kwargs)
+        file_tracker[req.session_hash][func.__name__] = out_path
+        return out_path
+    return wrapper
+
+
+def cleanup_file(req: gr.Request, func_name: str | None = None):
+    request_file = file_tracker.get(req.session_hash, {})
+    if func_name is None:
+        funcs = list(request_file)
+    else:
+        funcs = [func_name]
+
+    for name in funcs:
+        file_path = request_file.pop(name, None)
+        if file_path:
+            os.remove(file_path)
+            print(f'Removed: {file_path}')
+
+    if func_name is None and req.session_hash in file_tracker and not file_tracker[req.session_hash]:
+        # do this only when unloading though it's not a huge impact if not
+        del file_tracker[req.session_hash]
+        print(f'Cleaned up all files for session: {req.session_hash}')
+
+
 # =====================================================================
 # Gradio Endpoint Functions
 # =====================================================================
 
-def convert_video(input_file, sub_file, out_ext, start, end, res_w, res_h, crop_w, crop_h, crop_x, crop_y, progress=gr.Progress()):
+@cleanup_last_file
+def convert_video(input_file, sub_file, out_ext, start, end, res_w, res_h, crop_w, crop_h, crop_x, crop_y, progress=gr.Progress(), request: gr.Request = None):
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
@@ -140,7 +178,8 @@ def convert_video(input_file, sub_file, out_ext, start, end, res_w, res_h, crop_
     return out_path
 
 
-def convert_audio(input_file, out_ext, start, end, progress=gr.Progress()):
+@cleanup_last_file
+def convert_audio(input_file, out_ext, start, end, progress=gr.Progress(), request: gr.Request = None):
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
@@ -154,7 +193,8 @@ def convert_audio(input_file, out_ext, start, end, progress=gr.Progress()):
     return out_path
 
 
-def convert_image(input_file, out_ext, res_w, res_h, crop_w, crop_h, crop_x, crop_y, progress=gr.Progress()):
+@cleanup_last_file
+def convert_image(input_file, out_ext, res_w, res_h, crop_w, crop_h, crop_x, crop_y, progress=gr.Progress(), request: gr.Request = None):
     if not input_file: raise gr.Error("Please upload a file.")
     
     _, out_path = tempfile.mkstemp(suffix=f".{out_ext}")
@@ -170,7 +210,8 @@ def convert_image(input_file, out_ext, res_w, res_h, crop_w, crop_h, crop_x, cro
     return out_path
 
 
-def convert_to_gif(input_file, start, end, res_w, res_h, crop_w, crop_h, crop_x, crop_y, progress=gr.Progress()):
+@cleanup_last_file
+def convert_to_gif(input_file, start, end, res_w, res_h, crop_w, crop_h, crop_x, crop_y, progress=gr.Progress(), request: gr.Request = None):
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
@@ -190,7 +231,8 @@ def convert_to_gif(input_file, start, end, res_w, res_h, crop_w, crop_h, crop_x,
     return out_path
 
 
-def extract_audio(input_file, out_ext, start, end, progress=gr.Progress()):
+@cleanup_last_file
+def extract_audio(input_file, out_ext, start, end, progress=gr.Progress(), request: gr.Request = None):
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
@@ -306,5 +348,7 @@ with gr.Blocks(title="Web FormatFactory") as app:
                     e_out = gr.Audio(label="Output Audio")
                     
             e_btn.click(extract_audio, inputs=[e_in, e_ext, e_start, e_end], outputs=e_out)
+
+    app.unload(cleanup_file)
 
 app.launch(share=False, root_path=os.getenv('GRADIO_ROOT_PATH'))
