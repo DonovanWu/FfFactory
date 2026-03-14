@@ -148,6 +148,10 @@ def cleanup_file(req: gr.Request, func_name: str | None = None):
         print(f'Cleaned up all files for session: {req.session_hash}')
 
 
+def get_tempfile_prefix(file_path):
+    return os.path.basename(file_path).rsplit('.', maxsplit=1)[0] + '_'
+
+
 # =====================================================================
 # Gradio Endpoint Functions
 # =====================================================================
@@ -157,7 +161,7 @@ def convert_video(input_file, sub_file, out_ext, start, end, res_w, res_h, crop_
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
-    _, out_path = tempfile.mkstemp(suffix=f".{out_ext}")
+    _, out_path = tempfile.mkstemp(prefix=get_tempfile_prefix(input_file), suffix=f".{out_ext}")
     
     cmd, filters = build_base_cmd(input_file, start, end, crop_w, crop_h, crop_x, crop_y, res_w, res_h)
     
@@ -183,7 +187,7 @@ def convert_audio(input_file, out_ext, start, end, progress=gr.Progress(), reque
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
-    _, out_path = tempfile.mkstemp(suffix=f".{out_ext}")
+    _, out_path = tempfile.mkstemp(prefix=get_tempfile_prefix(input_file), suffix=f".{out_ext}")
     
     cmd, _ = build_base_cmd(input_file, start, end, None, None, None, None, None, None)
     cmd += ARGS_AUDIO_CONVERT
@@ -197,7 +201,7 @@ def convert_audio(input_file, out_ext, start, end, progress=gr.Progress(), reque
 def convert_image(input_file, out_ext, res_w, res_h, crop_w, crop_h, crop_x, crop_y, progress=gr.Progress(), request: gr.Request = None):
     if not input_file: raise gr.Error("Please upload a file.")
     
-    _, out_path = tempfile.mkstemp(suffix=f".{out_ext}")
+    _, out_path = tempfile.mkstemp(prefix=get_tempfile_prefix(input_file), suffix=f".{out_ext}")
     cmd, filters = build_base_cmd(input_file, None, None, crop_w, crop_h, crop_x, crop_y, res_w, res_h)
     
     if filters:
@@ -215,7 +219,7 @@ def convert_to_gif(input_file, start, end, res_w, res_h, crop_w, crop_h, crop_x,
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
-    _, out_path = tempfile.mkstemp(suffix=".gif")
+    _, out_path = tempfile.mkstemp(prefix=get_tempfile_prefix(input_file), suffix=".gif")
     
     cmd, filters = build_base_cmd(input_file, start, end, crop_w, crop_h, crop_x, crop_y, res_w, res_h)
     
@@ -236,7 +240,7 @@ def extract_audio(input_file, out_ext, start, end, progress=gr.Progress(), reque
     if not input_file: raise gr.Error("Please upload a file.")
     
     expected_duration = calculate_expected_duration(input_file, start, end)
-    _, out_path = tempfile.mkstemp(suffix=f".{out_ext}")
+    _, out_path = tempfile.mkstemp(prefix=get_tempfile_prefix(input_file), suffix=f".{out_ext}")
     
     cmd, _ = build_base_cmd(input_file, start, end, None, None, None, None, None, None)
     cmd += ARGS_EXTRACT_AUDIO
